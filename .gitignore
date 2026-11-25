@@ -5,7 +5,9 @@
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
-/storage/*
+/storage/*.key
+/storage/pail
+/storage/inertia-devtools
 /resources/js/actions
 /resources/js/routes
 /resources/js/wayfinder
