@@ -1,34 +1,69 @@
 # PixelForge image generation
 
-A Laravel, Vue, and Inertia app for the [PixelForge assessment](https://pixelforge.promptedit.dev/assessment). The feature instructions and checklist below describe Phase 1 after it is implemented. PixelForge uses simulated images and prices; [live Preview](https://task-ai-img-generation-production-7wrysp.laravel.cloud/).
+A Laravel, Vue, and Inertia app for the [PixelForge assessment](https://pixelforge.promptedit.dev/assessment). The feature instructions and checklist below describe Phase 1 as implemented: submission, signed-webhook and sweep recovery, exact settlement, and the generate/history UI. PixelForge uses simulated images and prices. The [Laravel Cloud preview](https://task-ai-img-generation-production-7wrysp.laravel.cloud/) hosts the starter only; a verified Phase 1 deployment has not been published yet.
 
 ## Run locally
 
-Use PHP 8.3+, Composer 2, and Node 22. From this directory:
+Prerequisites: PHP 8.4.1+ with PDO SQLite for the defaults, Composer 2, and Node 22.
+
+**1. Install dependencies.** From this directory:
 
 ```sh
 composer install
 npm ci
 ```
 
-For a fresh setup only, copy `.env.example` to `.env` if it does not exist, then run `php artisan key:generate`. Create `database/database.sqlite` if using SQLite and that file does not exist. Keep any existing app key and database.
+**2. Configure the environment** (fresh setup only — never overwrite an existing `.env`, app key, or database):
 
 ```sh
-php artisan migrate
-composer dev
+if [ ! -f .env ]; then
+    cp .env.example .env
+    php artisan key:generate
+fi
+test -f database/database.sqlite || touch database/database.sqlite
 ```
 
-`composer dev` starts the web app, frontend, and queue listener. Open `http://localhost:8000`. Once the recovery task is implemented, run `php artisan schedule:work` in a separate terminal.
+The defaults use SQLite and the database drivers for queue, cache, and session — no Redis needed. If you prefer MySQL, create a dedicated local database and set the `DB_*` values; install Redis only if you select it.
+
+**3. Add local PixelForge keys.** Set `PIXELFORGE_API_KEY` and the non-secret `PIXELFORGE_KEY_LABEL` (see [Configure PixelForge](#configure-pixelforge)). `PIXELFORGE_WEBHOOK_SECRET` is only needed for webhook delivery, which requires a public HTTPS URL — locally the scheduler covers updates instead.
+
+**4. Migrate and seed.**
+
+```sh
+php artisan migrate --seed
+```
+
+`--seed` is safe and non-destructive: it creates the demo account below only when `APP_ENV` is `local` or `testing`, and skips it if the address is already taken. This is not `migrate:fresh` — existing data is kept.
+
+### Local demo account
+
+Sign in with **`admin@example.com` / `admin123`**. Despite the address it is an ordinary verified user with no admin role, meant only for local development. For cloud verification use a separate, private evaluator account — never this one.
+
+**5. Run — keep two terminals open.**
+
+```sh
+# Terminal 1: web app, Vite frontend, and queue listener
+composer run dev
+
+# Terminal 2: recovery sweep that updates generations
+php artisan schedule:work
+```
+
+Then open `http://localhost:8000` and sign in with the demo account.
+
+**Try it.** Include `[succeed]` in a prompt to exercise the success flow or `[slow]` to test a longer wait. History checks for updates automatically. Without a public webhook, the scheduler polls for the outcome, so a row can go straight from queued to finished. `SubmitGeneration DONE` only means the worker finished its submission job; it does not confirm acceptance or completion. Do not resubmit an in-progress request just to check its status.
 
 ## Configure PixelForge
 
-Once Phase 1 is implemented, put `PIXELFORGE_API_KEY`, `PIXELFORGE_WEBHOOK_SECRET`, and a non-secret `PIXELFORGE_KEY_LABEL` in local configuration. Use a separate key and signing secret in each environment. Never commit `.env`, keys, signing secrets, or signed image URLs.
+Put `PIXELFORGE_API_KEY`, `PIXELFORGE_WEBHOOK_SECRET`, and a non-secret `PIXELFORGE_KEY_LABEL` in local configuration. Use a separate key and signing secret in each environment. Never commit `.env`, keys, signing secrets, or signed image URLs.
+
+For local verification mail without SMTP, set `MAIL_MAILER=log` in the local environment and read the verification link from the local Laravel log — never paste or share that link elsewhere. Production must use real mail delivery.
 
 In the PixelForge dashboard, set the webhook URL to `https://<public-host>/webhooks/pixelforge` and use **Send test event**. Local webhook delivery needs a public HTTPS tunnel; local polling does not. On the public deployment, run the web app, worker, and scheduler with a shared cache and persistent MySQL. Set `APP_DEBUG=false`, configure outbound verification mail, and create a verified evaluator account with sample generations. Share its access privately, not in the repository.
 
 ## Use the app
 
-1. Sign in with a verified account. Open **Generate**, enter a prompt, pick a size and quality, and optionally add up to four reference image links.
+1. Sign in with a verified account. Open **Create**, enter a prompt, pick a size and quality, and optionally add up to four reference image links.
 2. Check the estimated USD range before submitting. It includes the 25% markup but is not a price cap.
 3. Open **History** for progress, the image, and the final charge. A successful generation is charged once, a failure is free, and image links expire after 24 hours. Balances and test credit purchases are not part of Phase 1.
 

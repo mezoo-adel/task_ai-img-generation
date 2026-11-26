@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -10,9 +11,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 /**
  * @property int $id
@@ -46,5 +49,24 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Defer the verification mail until after the response cycle so a slow
+     * or failing SMTP transport cannot break registration or the resend
+     * request. Transport errors are logged, not surfaced to the user.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        defer(function (): void {
+            try {
+                $this->notify(new VerifyEmail);
+            } catch (TransportExceptionInterface $e) {
+                Log::warning('auth.verification_mail_failed', [
+                    'user_id' => $this->id,
+                    'exception' => $e::class,
+                ]);
+            }
+        });
     }
 }

@@ -47,7 +47,13 @@ const passwordInput = useTemplateRef('passwordInput');
                     <Form
                         v-bind="ProfileController.destroy.form()"
                         reset-on-success
-                        @error="() => passwordInput?.focus()"
+                        @error="
+                            (formErrors: Record<string, string>) => {
+                                if (formErrors.password) {
+                                    passwordInput?.focus();
+                                }
+                            }
+                        "
                         :options="{
                             preserveScroll: true,
                         }"
@@ -79,6 +85,7 @@ const passwordInput = useTemplateRef('passwordInput');
                                 placeholder="Password"
                             />
                             <InputError :message="errors.password" />
+                            <InputError :message="errors.profile" />
                         </div>
 
                         <DialogFooter class="gap-2">

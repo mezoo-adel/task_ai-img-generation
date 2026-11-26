@@ -44,7 +44,18 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * A documented provider generation object for PixelForge tests.
+ *
+ * @param  array<string, mixed>  $extra
+ * @return array<string, mixed>
+ */
+function pixelforgeGenerationObject(string $id, string $status, string $localId, array $extra = []): array
 {
-    // ..
+    return array_merge([
+        'id' => $id,
+        'status' => $status,
+        'metadata' => ['local_generation_id' => $localId],
+        'created_at' => '2026-01-01T00:00:00Z',
+    ], $extra);
 }

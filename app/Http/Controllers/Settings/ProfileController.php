@@ -5,10 +5,15 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\CreditTransaction;
+use App\Models\Generation;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -44,15 +49,35 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's profile.
+     * Delete the user's profile. Accounts with generation or charge history
+     * are kept so the records remain reconcilable; the foreign keys stay as
+     * a backstop.
      */
     public function destroy(ProfileDeleteRequest $request): RedirectResponse
     {
+        /** @var User $user */
         $user = $request->user();
 
-        Auth::logout();
+        DB::transaction(function () use ($user): void {
+            User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
-        $user->delete();
+            $hasHistory = Generation::query()->where('user_id', $user->id)->exists()
+                || CreditTransaction::query()->where('user_id', $user->id)->exists();
+
+            if ($hasHistory) {
+                throw ValidationException::withMessages([
+                    'profile' => __('This account has generation or charge history and cannot be deleted.'),
+                ]);
+            }
+
+            $user->delete();
+        });
+
+        // SessionGuard::logout() re-saves the user to rotate a non-empty remember
+        // token, which would re-insert the just-deleted row.
+        $user->setRememberToken(null);
+
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

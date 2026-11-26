@@ -15,12 +15,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // The demo account is for local development only — never seed it in
+        // other environments, and never overwrite an account that already
+        // uses this address.
+        if (! app()->environment('local', 'testing')) {
+            return;
+        }
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'admin@example.com',
-            'password' => 'admin123',
-        ]);
+        if (! User::where('email', 'admin@example.com')->exists()) {
+            User::factory()->create([
+                'name' => 'Test User',
+                'email' => 'admin@example.com',
+                'password' => 'admin123',
+            ]);
+        }
     }
 }

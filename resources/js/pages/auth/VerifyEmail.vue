@@ -10,7 +10,7 @@ defineOptions({
     layout: {
         title: 'Email verification',
         description:
-            'Please verify your email address by clicking on the link we just emailed to you.',
+            'We requested a verification email for the address you registered with. Check your inbox — and the spam folder — for the link.',
     },
 });
 
@@ -26,8 +26,8 @@ defineProps<{
         v-if="status === 'verification-link-sent'"
         class="mb-4 text-center text-sm font-medium text-green-600"
     >
-        A new verification link has been sent to the email address you provided
-        during registration.
+        We requested another verification email for the address you provided
+        during registration. Check your inbox and the spam folder.
     </div>
 
     <Form

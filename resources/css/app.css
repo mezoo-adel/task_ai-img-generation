@@ -59,6 +59,13 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    --color-pf-paper: var(--pf-paper);
+    --color-pf-ink: var(--pf-ink);
+    --color-pf-cobalt: var(--pf-cobalt);
+    --color-pf-on-cobalt: var(--pf-on-cobalt);
+    --color-pf-frame: var(--pf-frame);
+    --color-pf-proof: var(--pf-proof);
 }
 
 :root {
@@ -95,6 +102,13 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.87 0 0);
+
+    --pf-paper: #fcfcfd;
+    --pf-ink: #172032;
+    --pf-cobalt: #1747c5;
+    --pf-on-cobalt: #ffffff;
+    --pf-frame: #dce7f9;
+    --pf-proof: #edf3fd;
 }
 
 .dark {
@@ -130,6 +144,13 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(0.269 0 0);
     --sidebar-ring: oklch(0.439 0 0);
+
+    --pf-paper: var(--background);
+    --pf-ink: var(--foreground);
+    --pf-cobalt: #bdd3ff;
+    --pf-on-cobalt: #0b1526;
+    --pf-frame: var(--border);
+    --pf-proof: #132540;
 }
 
 @layer base {

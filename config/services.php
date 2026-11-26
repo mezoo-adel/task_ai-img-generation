@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'pixelforge' => [
+        'base_url' => 'https://pixelforge.promptedit.dev/v1',
+        'api_key' => env('PIXELFORGE_API_KEY'),
+        'webhook_secret' => env('PIXELFORGE_WEBHOOK_SECRET'),
+        'key_label' => env('PIXELFORGE_KEY_LABEL', 'local'),
+    ],
+
 ];
