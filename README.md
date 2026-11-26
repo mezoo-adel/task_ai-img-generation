@@ -57,13 +57,25 @@ Then open `http://localhost:8000` and sign in with the demo account.
 
 Put `PIXELFORGE_API_KEY`, `PIXELFORGE_WEBHOOK_SECRET`, and a non-secret `PIXELFORGE_KEY_LABEL` in local configuration. Use a separate key and signing secret in each environment. Never commit `.env`, keys, signing secrets, or signed image URLs.
 
-For local verification mail without SMTP, set `MAIL_MAILER=log` in the local environment and read the verification link from the local Laravel log — never paste or share that link elsewhere. Production must use real mail delivery.
+Email verification is disabled, so no mail is needed to sign up or sign in. Outbound mail is only used for password-reset links; for local testing set `MAIL_MAILER=log` and read the link from the local Laravel log. Production can use any SMTP provider.
 
-In the PixelForge dashboard, set the webhook URL to `https://<public-host>/webhooks/pixelforge` and use **Send test event**. Local webhook delivery needs a public HTTPS tunnel; local polling does not. On the public deployment, run the web app, worker, and scheduler with a shared cache and persistent MySQL. Set `APP_DEBUG=false`, configure outbound verification mail, and create a verified evaluator account with sample generations. Share its access privately, not in the repository.
+In the PixelForge dashboard, set the webhook URL to `https://<public-host>/webhooks/pixelforge` and use **Send test event**. Local webhook delivery needs a public HTTPS tunnel; local polling does not. On the public deployment, run the web app, worker, and scheduler with a shared cache and persistent MySQL. Set `APP_DEBUG=false`, configure outbound mail for password resets, and create an evaluator account with sample generations. Share its access privately, not in the repository.
+
+## Deploy to Laravel Cloud
+
+Deploy from this repository on branch `main`, then configure the environment canvas:
+
+1. **Database** — attach a Laravel Cloud MySQL database; Cloud injects the `DB_*` variables. Make sure the deploy command runs `php artisan migrate --force`.
+2. **Cache and queues (Valkey)** — click **Cache** on the canvas, create a **Laravel Valkey** cache, and attach it. Cloud injects `REDIS_HOST`, `REDIS_PASSWORD`, and `REDIS_URL` on the next deploy. Set `QUEUE_CONNECTION=redis` and keep `SESSION_DRIVER=database` (or `redis`). Cloud sets `CACHE_STORE` for you.
+3. **Queue worker** — on the App cluster (or a dedicated worker cluster), add a background process with the **queue worker** configuration so `queue:work` runs continuously; `SubmitGeneration` jobs need it. Cloud restarts workers after each deploy.
+4. **Scheduler** — enable the **Scheduler** toggle on the App cluster. Cloud runs `schedule:run` every minute, which drives `PollOverdueGenerations`; `onOneServer` plus the `WithoutOverlapping` mutex keep it safe across replicas.
+5. **Email (optional)** — needed only for password-reset links; accounts never need verification. Use any SMTP provider (Brevo works on the free tier): `MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_SCHEME` (`smtp` for 587/STARTTLS, `smtps` for 465), `MAIL_USERNAME` (the provider's SMTP login), `MAIL_PASSWORD` (the SMTP key), and `MAIL_FROM_ADDRESS` to a sender the provider accepts.
+6. **PixelForge** — set the production `PIXELFORGE_API_KEY`, `PIXELFORGE_WEBHOOK_SECRET`, and `PIXELFORGE_KEY_LABEL`, register `https://<app>.laravel.cloud/webhooks/pixelforge` in the PixelForge dashboard, and use **Send test event**.
+7. Set `APP_ENV=production`, `APP_DEBUG=false`, and `APP_URL=https://<app>.laravel.cloud`, then redeploy.
 
 ## Use the app
 
-1. Sign in with a verified account. Open **Create**, enter a prompt, pick a size and quality, and optionally add up to four reference image links.
+1. Sign in or register an account. Open **Create**, enter a prompt, pick a size and quality, and optionally add up to four reference image links.
 2. Check the estimated USD range before submitting. It includes the 25% markup but is not a price cap.
 3. Open **History** for progress, the image, and the final charge. A successful generation is charged once, a failure is free, and image links expire after 24 hours. Balances and test credit purchases are not part of Phase 1.
 

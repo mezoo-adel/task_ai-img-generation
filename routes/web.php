@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [GenerationController::class, 'dashboard'])->name('dashboard');
 
     Route::get('generations/create', [GenerationController::class, 'create'])->name('generations.create');

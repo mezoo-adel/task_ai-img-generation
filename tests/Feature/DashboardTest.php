@@ -12,11 +12,11 @@ test('guests are redirected to the login page', function () {
     $response->assertRedirect(route('login'));
 });
 
-test('unverified users are redirected to the verification notice', function () {
+test('unverified users can visit the dashboard', function () {
     $response = $this->actingAs(User::factory()->unverified()->create())
         ->get(route('dashboard'));
 
-    $response->assertRedirect(route('verification.notice'));
+    $response->assertOk();
 });
 
 test('authenticated users can visit the dashboard', function () {
